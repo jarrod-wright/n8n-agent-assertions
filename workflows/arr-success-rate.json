@@ -1,0 +1,149 @@
+{
+  "name": "ARR - Success rate",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "hours",
+              "hoursInterval": 1
+            }
+          ]
+        }
+      },
+      "id": "a2b3c4d5-0002-4000-8000-000000000001",
+      "name": "Every hour",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "execution",
+        "returnAll": true,
+        "filters": {},
+        "options": {},
+        "requestOptions": {}
+      },
+      "id": "a2b3c4d5-0002-4000-8000-000000000002",
+      "name": "Get executions",
+      "type": "n8n-nodes-base.n8n",
+      "typeVersion": 1,
+      "position": [
+        220,
+        0
+      ],
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "jsCode": "// ARR - Success rate. Thresholds come from the report (section 5): set from your 30-day baseline.\nconst CONFIG = {\n  window_hours: 24,             // rolling window\n  max_failure_rate: 0.05,       // default: alert above 5% failed runs\n  min_runs: 10,                 // ignore workflows with fewer runs in the window\n  per_workflow: {},             // { 'aBc123': 0.10 } sets one workflow's own threshold, by workflow id\n  ignore: [],                   // workflow ids to leave out\n};\n\nconst since = Date.now() - CONFIG.window_hours * 3600000;\nconst runs = $input.all().map(i => i.json).filter(e => e && e.id !== undefined);\nconst by = {};\nfor (const e of runs) {\n  if (CONFIG.ignore.includes(e.workflowId) || e.workflowId === $workflow.id) continue;\n  if (!['success', 'error', 'crashed'].includes(e.status)) continue;\n  if (new Date(e.startedAt).getTime() < since) continue;\n  const w = (by[e.workflowId] = by[e.workflowId] || { total: 0, failed: 0, ids: [] });\n  w.total += 1;\n  if (e.status !== 'success') { w.failed += 1; if (w.ids.length < 5) w.ids.push(e.id); }\n}\nconst problems = [];\nfor (const [id, w] of Object.entries(by)) {\n  const limit = CONFIG.per_workflow[id] ?? CONFIG.max_failure_rate;\n  const rate = w.failed / w.total;\n  if (w.total >= CONFIG.min_runs && rate > limit) {\n    problems.push(`workflow ${id} had ${w.failed} of ${w.total} runs fail (${(rate * 100).toFixed(1)}%, limit ${(limit * 100).toFixed(1)}%; e.g. executions ${w.ids.join(', ')})`);\n  }\n}\nif (problems.length) {\n  throw new Error(`ARR - Success rate failed, ${problems.length} workflow(s) over threshold in the last ${CONFIG.window_hours} h. ${problems.join('; ')}`);\n}\nreturn [{ json: { ok: true, workflows: Object.keys(by).length, window_hours: CONFIG.window_hours } }];\n"
+      },
+      "id": "a2b3c4d5-0002-4000-8000-000000000003",
+      "name": "Check",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        440,
+        0
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "a2b3c4d5-0002-4000-8000-000000000004",
+      "name": "All green",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        660,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## ARR - Success rate (N-5)\n\nOnce an hour, reads your execution list through the n8n API (no run data) and works out each workflow's failure rate over the window in **Check**. A workflow above its threshold stops this run with an error naming it and example execution ids.\n\n1. In **Get executions**, choose an n8n API credential for this instance (a key with `execution:read` and `execution:list` is enough).\n2. In **Check**, set the thresholds from the report (section 5).\n3. **Workflow settings > Error Workflow**: pick the error workflow your other workflows use.\n4. Activate.",
+        "height": 460,
+        "width": 620
+      },
+      "id": "a2b3c4d5-0002-4000-8000-000000000099",
+      "name": "How to set it up",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        0,
+        -500
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "a2b3c4d5-0002-4000-8000-000000000098",
+      "name": "Run now",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        200
+      ]
+    }
+  ],
+  "connections": {
+    "Every hour": {
+      "main": [
+        [
+          {
+            "node": "Get executions",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get executions": {
+      "main": [
+        [
+          {
+            "node": "Check",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check": {
+      "main": [
+        [
+          {
+            "node": "All green",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Run now": {
+      "main": [
+        [
+          {
+            "node": "Get executions",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "saveDataErrorExecution": "all",
+    "saveDataSuccessExecution": "none"
+  },
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": false,
+    "arr": "N-5"
+  }
+}
