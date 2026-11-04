@@ -52,9 +52,19 @@ Each **Check** node has these settings at the top, with a per-workflow override.
 
 Each workflow was imported and run on n8n 2.32.3 in queue mode (main and worker, Postgres, Redis) on 2026-10-20, with a passing and a failing case for each check. A failing check was also delivered through an active error workflow. The files also import and run on n8n 1.123.85. The node versions used are the ones both n8n 1.x and 2.x load.
 
+## What this proves
+
+An agent can stop working and still look healthy. Each check here was run with a passing and a failing case, so you can see it catch the failure it was built for. Those are a dead credential, a rising failure rate, a runaway loop, and an answer that changed shape after a model update.
+
+These are the checks I install when I repair a client's n8n agent. On a full agent-estate review, they are tuned to the client's own run history, and the client keeps them.
+
 ## Who built this
 
-Jarrod Wright, The Certainty Engineer. These are the four standard checks that ship with the Agent Reliability Report: a fixed-price, read-only review of one n8n agent setup, in which the checks are tuned to your own run history and you keep them. For how I build failure handling into n8n workflows, see [n8n-workflow-hardening](https://github.com/jarrod-wright/n8n-workflow-hardening).
+Jarrod Wright, The Certainty Engineer. I step in when a production n8n workflow or AI agent breaks. Every engagement starts with a written diagnosis, where each root cause comes with its evidence, and the repair is priced only after it.
+
+For several agents with weeks of failures, there is the agent-estate review. It is a fixed-price, read-only review of up to 30 days of run history, with these checks tuned to your thresholds. For how I build failure handling into n8n workflows, see [n8n-workflow-hardening](https://github.com/jarrod-wright/n8n-workflow-hardening).
+
+Email jarr.wright@gmail.com with what your agents do and what is going wrong. I reply within 24 hours.
 
 ## Licence
 
