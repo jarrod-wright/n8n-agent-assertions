@@ -60,7 +60,7 @@ These are the checks I install when I repair a client's n8n agent. On a full age
 
 ## Who built this
 
-Jarrod Wright, The Certainty Engineer. I step in when a production n8n workflow or AI agent breaks. Every engagement starts with a written diagnosis, where each root cause comes with its evidence, and the repair is priced only after it.
+Jarrod Wright, The Certainty Engineer. I step in when a production n8n workflow or AI agent breaks. Every engagement starts with a written diagnosis, where each root cause comes with its evidence. No repair starts before that.
 
 For several agents with weeks of failures, there is the agent-estate review. It is a fixed-price, read-only review of up to 30 days of run history, with these checks tuned to your thresholds. For how I build failure handling into n8n workflows, see [n8n-workflow-hardening](https://github.com/jarrod-wright/n8n-workflow-hardening).
 
