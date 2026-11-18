@@ -1,6 +1,9 @@
 # n8n agent assertions
 
 Four read-only n8n workflows that watch AI agents in production and tell you when one starts failing quietly. Import them, point them at your agents, and they alert through the error workflow you already use.
+If one of those agents handles your inbound leads, a quiet failure means hand-raisers nobody calls.
+
+[![harness](https://github.com/jarrod-wright/n8n-agent-assertions/actions/workflows/ci.yml/badge.svg)](https://github.com/jarrod-wright/n8n-agent-assertions/actions/workflows/ci.yml)
 
 | Workflow | Catches | How |
 |---|---|---|
@@ -52,17 +55,33 @@ Each **Check** node has these settings at the top, with a per-workflow override.
 
 Each workflow was imported and run on n8n 2.32.3 in queue mode (main and worker, Postgres, Redis) on 2026-10-20, with a passing and a failing case for each check. A failing check was also delivered through an active error workflow. The files also import and run on n8n 1.123.85. The node versions used are the ones both n8n 1.x and 2.x load.
 
+The harness reruns the passing and failing cases for every check on every push, so that evidence stays current as the files change:
+
+```
+node harness/run.mjs
+```
+
+It checks that each file imports and is wired as documented (triggers reach the Check, the timezone is pinned, network calls time out and retry bounded), runs the passing and failing case through each Check with the same helpers n8n provides, and runs the public linter from [n8n-workflow-hardening](https://github.com/jarrod-wright/n8n-workflow-hardening) over every workflow. The same command runs in this repository's CI; the badge above is its current result.
+
+## Justified findings
+
+The public linter reports three kinds of finding against these workflows. Each is deliberate:
+
+- **R1 - no error workflow set.** You point these at the error workflow your alerts already use (Workflow settings > Error Workflow). A template cannot know that target, so the files ship without one, and the setup note in each workflow tells you where to set it.
+- **R7 - probe failures continue into the Check.** A dead credential is data, not a crash. Each probe returns its HTTP status as a normal result, and the Check node is what turns it into a named, useful alert instead of a generic failure.
+- **R8 - the Golden case timeout is an expression.** The timeout comes from each case's own `max_seconds` setting, so it is set per case rather than hardcoded; the linter reads the file statically and cannot resolve the expression.
+
 ## What this proves
 
 An agent can stop working and still look healthy. Each check here was run with a passing and a failing case, so you can see it catch the failure it was built for. Those are a dead credential, a rising failure rate, a runaway loop, and an answer that changed shape after a model update.
 
-These are the checks I install when I repair a client's n8n agent. On a full agent-estate review, they are tuned to the client's own run history, and the client keeps them.
+These are the checks I install when I repair a client's n8n agent, tuned to that system's own run history, and the client keeps them.
 
 ## Who built this
 
 Jarrod Wright, The Certainty Engineer. I step in when a production n8n workflow or AI agent breaks. Every engagement starts with a written diagnosis, where each root cause comes with its evidence. No repair starts before that.
 
-For several agents with weeks of failures, there is the agent-estate review. It is a fixed-price, read-only review of up to 30 days of run history, with these checks tuned to your thresholds. For how I build failure handling into n8n workflows, see [n8n-workflow-hardening](https://github.com/jarrod-wright/n8n-workflow-hardening).
+I also build inbound-aware GTM systems for SaaS teams whose inbound runs on automations. The work covers speed-to-lead with a system SLA, dormant-pipeline recycling from your own systems, and pipeline reporting. That work starts the same way, with a written diagnosis.
 
 Email jarr.wright@gmail.com with what your agents do and what is going wrong. I reply within 24 hours.
 
